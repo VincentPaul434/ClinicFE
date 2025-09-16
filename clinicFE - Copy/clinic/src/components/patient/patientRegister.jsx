@@ -46,18 +46,7 @@ const PatientRegister = ({ onNavigate }) => {
     "Other",
   ]
 
-  const barangayOptions = [
-    "Alegria",
-    "Buagsong",
-    "Catarman",
-    "Cogon",
-    "Cordova Poblacion",
-    "Day-as",
-    "Gabi",
-    "Ibabao",
-    "Pilipog",
-    "San Miguel",
-  ]
+  // Removed unused barangayOptions variable
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -585,11 +574,11 @@ const PatientRegister = ({ onNavigate }) => {
                 />
                 <span className="checkmark"></span>
                 I agree to the{" "}
-                <a href="#" className="terms-link">
+                <a href="/terms" className="terms-link">
                   Terms and Conditions
                 </a>{" "}
                 and{" "}
-                <a href="#" className="terms-link">
+                <a href="/privacy" className="terms-link">
                   Privacy Policy
                 </a>
               </label>

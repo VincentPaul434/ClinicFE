@@ -61,6 +61,13 @@ const MessagesReminders = () => {
     }
   };
 
+  // Utility to combine date and time to "YYYY-MM-DD HH:mm:ss"
+  const combineDateTime = (date, time) => {
+    if (!date || !time) return '';
+    const timeString = time.length === 5 ? `${time}:00` : time; // pad seconds if needed
+    return `${date} ${timeString}`;
+  };
+
   const filterReminders = () => {
     let filtered = reminders.filter(reminder => {
       const patientName = getPatientName(reminder.patientId).toLowerCase();
@@ -72,10 +79,10 @@ const MessagesReminders = () => {
              reminder.reminderType.toLowerCase().includes(search);
     });
 
-    // Sort by reminder date/time (most recent first)
+    // Sort by preferredDateTime (most recent first)
     filtered.sort((a, b) => {
-      const dateA = new Date(`${a.reminderDate} ${a.reminderTime}`);
-      const dateB = new Date(`${b.reminderDate} ${b.reminderTime}`);
+      const dateA = new Date(a.preferredDateTime.replace(' ', 'T'));
+      const dateB = new Date(b.preferredDateTime.replace(' ', 'T'));
       return dateB - dateA;
     });
 
@@ -99,13 +106,21 @@ const MessagesReminders = () => {
       return;
     }
 
+    const payload = {
+      patientId: newReminder.patientId,
+      reminderType: newReminder.reminderType,
+      preferredDateTime: combineDateTime(newReminder.reminderDate, newReminder.reminderTime),
+      message: newReminder.message,
+      isRead: false
+    };
+
     try {
       const response = await fetch('http://localhost:3000/api/reminders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newReminder),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -214,8 +229,10 @@ const MessagesReminders = () => {
     }));
   };
 
-  const formatDateTime = (date, time) => {
-    const dateTime = new Date(`${date} ${time}`);
+  const formatDateTime = (preferredDateTime) => {
+    if (!preferredDateTime) return 'Invalid date';
+    const dateTime = new Date(preferredDateTime.replace(' ', 'T'));
+    if (isNaN(dateTime.getTime())) return 'Invalid date';
     return dateTime.toLocaleString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -300,7 +317,7 @@ const MessagesReminders = () => {
                         : reminder.message}
                     </p>
                     <div className="reminder-datetime">
-                      📅 {formatDateTime(reminder.reminderDate, reminder.reminderTime)}
+                      📅 {formatDateTime(reminder.preferredDateTime)}
                     </div>
                   </div>
                 </div>

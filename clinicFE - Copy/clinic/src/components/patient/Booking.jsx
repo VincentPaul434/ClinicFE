@@ -96,14 +96,28 @@ const Booking = ({ patient }) => {
       return;
     }
 
+    if (!patient?.patientId || !selectedService?.serviceId) {
+      setMessage('Missing patient or service information. Please try again.');
+      return;
+    }
+
     setIsLoading(true);
     setMessage('');
 
     try {
+      // Convert HTML datetime-local (YYYY-MM-DDTHH:mm) to SQL DATETIME (YYYY-MM-DD HH:mm:ss)
+      const toSqlDateTime = (dtLocal) => {
+        if (!dtLocal) return dtLocal;
+        // Ensure seconds are present and replace 'T' with space
+        const [datePart, timePart] = dtLocal.split('T');
+        const timeWithSeconds = timePart?.length === 5 ? `${timePart}:00` : timePart; // HH:mm -> HH:mm:00
+        return `${datePart} ${timeWithSeconds}`;
+      };
+
       const appointmentPayload = {
         patientId: patient.patientId,
         serviceId: selectedService.serviceId,
-        preferredDateTime: appointmentData.preferredDateTime,
+        preferredDateTime: toSqlDateTime(appointmentData.preferredDateTime),
         symptom: appointmentData.symptom
       };
 
@@ -117,7 +131,14 @@ const Booking = ({ patient }) => {
         body: JSON.stringify(appointmentPayload),
       });
 
-      const data = await response.json();
+      // Try to parse JSON; if it fails, fall back to text
+      let data;
+      try {
+        data = await response.json();
+      } catch (_) {
+        const text = await response.text();
+        data = { error: text };
+      }
 
       if (response.ok) {
         setMessage('Appointment booked successfully!');
@@ -125,7 +146,9 @@ const Booking = ({ patient }) => {
           closeModal();
         }, 2000);
       } else {
-        setMessage(data.error || 'Failed to book appointment');
+        const backendMsg = typeof data === 'string' ? data : (data?.error || data?.message);
+        setMessage(backendMsg || 'Failed to book appointment');
+        console.error('Appointment booking failed:', data);
       }
     } catch (error) {
       setMessage('Network error. Please try again.');

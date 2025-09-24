@@ -454,7 +454,7 @@ const MessagesReminders = () => {
                 <div className="detail-section">
                   <h4>Reminder Details</h4>
                   <p><strong>Type:</strong> {selectedReminder.reminderType}</p>
-                  <p><strong>Date & Time:</strong> {formatDateTime(selectedReminder.reminderDate, selectedReminder.reminderTime)}</p>
+                 <p><strong>Date & Time:</strong> {formatDateTime(selectedReminder.preferredDateTime)}</p>
                   <p><strong>Status:</strong> {selectedReminder.isRead ? 'Read' : 'Unread'}</p>
                 </div>
 

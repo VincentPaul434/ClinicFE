@@ -117,6 +117,7 @@ const LoginModal = ({ isOpen, onClose, onNavigate, onOpenStaffLogin, onOpenAdmin
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
     setForgotStatus({ type: '', text: '' });
+
     const email = forgotEmail.trim();
     if (!email) {
       setForgotStatus({ type: 'error', text: 'Email is required.' });
@@ -127,24 +128,26 @@ const LoginModal = ({ isOpen, onClose, onNavigate, onOpenStaffLogin, onOpenAdmin
       setForgotStatus({ type: 'error', text: 'Enter a valid email.' });
       return;
     }
+
     setForgotLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/auth/forgot-password', {
+      const res = await fetch('http://localhost:3000/api/patients/send-reset-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-      let data = null;
-      try { data = await res.json(); } catch {}
+
+      // We do not rely on response body shape; generic message always
       if (res.ok) {
         setForgotStatus({
           type: 'success',
-          text: (data && (data.message || data.status)) || 'If the email exists, check your inbox for reset instructions.'
+          text: 'If the email exists, a reset link was sent.'
         });
       } else {
+        // Even on error, keep generic (avoid email enumeration)
         setForgotStatus({
           type: 'error',
-          text: (data && (data.error || data.message)) || 'Request failed. Try again.'
+          text: 'Request failed. Try again.'
         });
       }
     } catch {

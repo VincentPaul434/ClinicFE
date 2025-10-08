@@ -8,6 +8,7 @@ import LoginModal from './components/patient/LoginModal';
 import StaffLoginModal from './components/staff/LoginModal';
 import AdminLoginModal from './components/admin/AdminLoginModal';
 import AdminDashboard from './components/admin/AdminDashboard';
+import ResetPassword from './components/patient/ResetPassword';
 import './App.css';
 
 function App() {
@@ -25,11 +26,12 @@ function App() {
     if (path === '/dashboard' || hash) {
       return 'dashboard';
     }
-    
+
     if (path === '/register') return 'register';
     if (path === '/staff-register') return 'staffRegister';
     if (path === '/staff-dashboard') return 'staffDashboard';
     if (path === '/admin-dashboard') return 'adminDashboard';
+    if (path === '/reset') return 'resetPassword'; // added
     return 'home';
   };
 
@@ -86,8 +88,6 @@ function App() {
 
   const navigateTo = (page) => {
     setCurrentPage(page);
-    
-    // Update URL without causing page reload
     let url;
     switch (page) {
       case 'home':
@@ -107,6 +107,9 @@ function App() {
         break;
       case 'adminDashboard':
         url = '/admin-dashboard';
+        break;
+      case 'resetPassword':
+        url = '/reset';
         break;
       default:
         url = '/';
@@ -161,7 +164,10 @@ function App() {
       {currentPage === 'dashboard' && <PatientDashboard onNavigate={navigateTo} onLogout={handleLogout} />}
       {currentPage === 'staffDashboard' && <StaffDashboard onNavigate={navigateTo} onLogout={handleLogout} />}
       {currentPage === 'adminDashboard' && <AdminDashboard onNavigate={navigateTo} onLogout={handleLogout} />}
-      
+      {currentPage === 'resetPassword' && (
+        <ResetPassword onBack={() => navigateTo('home')} />
+      )}
+
       <LoginModal 
         isOpen={isLoginModalOpen} 
         onClose={closeLoginModal} 

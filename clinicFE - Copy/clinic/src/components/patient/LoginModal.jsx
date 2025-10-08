@@ -6,11 +6,15 @@ const LoginModal = ({ isOpen, onClose, onNavigate, onOpenStaffLogin, onOpenAdmin
     username: '',
     password: ''
   });
-  
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  // NEW: forgot password states
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotStatus, setForgotStatus] = useState({ type: '', text: '' });
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -104,7 +108,55 @@ const LoginModal = ({ isOpen, onClose, onNavigate, onOpenStaffLogin, onOpenAdmin
   };
 
   const handleForgotPassword = () => {
-    alert('Forgot password functionality will be implemented soon.');
+    // Switch view to forgot password panel
+    setShowForgot(true);
+    setForgotEmail(formData.username || '');
+    setForgotStatus({ type: '', text: '' });
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setForgotStatus({ type: '', text: '' });
+    const email = forgotEmail.trim();
+    if (!email) {
+      setForgotStatus({ type: 'error', text: 'Email is required.' });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setForgotStatus({ type: 'error', text: 'Enter a valid email.' });
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      let data = null;
+      try { data = await res.json(); } catch {}
+      if (res.ok) {
+        setForgotStatus({
+          type: 'success',
+          text: (data && (data.message || data.status)) || 'If the email exists, check your inbox for reset instructions.'
+        });
+      } else {
+        setForgotStatus({
+          type: 'error',
+          text: (data && (data.error || data.message)) || 'Request failed. Try again.'
+        });
+      }
+    } catch {
+      setForgotStatus({ type: 'error', text: 'Network error. Try again.' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setShowForgot(false);
+    setForgotStatus({ type: '', text: '' });
   };
 
   const handleStaffLogin = () => {
@@ -123,78 +175,111 @@ const LoginModal = ({ isOpen, onClose, onNavigate, onOpenStaffLogin, onOpenAdmin
     <div className="modal-overlay" onClick={onClose}>
       <div className="login-modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>×</button>
-        
+
         <div className="modal-header">
-          <h2>PATIENT LOGIN</h2>
+          <h2>{showForgot ? 'FIND YOUR ACCOUNT' : 'PATIENT LOGIN'}</h2>
         </div>
 
         <div className="modal-body">
-          {message && (
+          {!showForgot && message && (
             <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
               {message}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <div className="input-container">
-                
-                <input
-                  type="text"
-                  name="username"
-                  placeholder="Username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className={errors.username ? 'error' : ''}
-                />
+            {showForgot ? (
+              <form onSubmit={handleForgotSubmit} noValidate>
+                {forgotStatus.text && (
+                  <div className={`message ${forgotStatus.type === 'error' ? 'error' : 'success'}`}>
+                    {forgotStatus.text}
+                  </div>
+                )}
+                <div className="form-group">
+                  <div className="input-container">
+                    <input
+                      type="email"
+                      name="forgotEmail"
+                      placeholder="Enter your email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      disabled={forgotLoading}
+                    />
+                  </div>
+                </div>
+                <button type="submit" disabled={forgotLoading} className="login-btn">
+                  {forgotLoading ? 'SENDING...' : 'SEND RESET LINK'}
+                </button>
+                <button type="button" className="register-btn" onClick={handleBackToLogin} disabled={forgotLoading}>
+                  BACK TO LOGIN
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <div className="input-container">
+                    <input
+                      type="text"
+                      name="username"
+                      placeholder="Email"
+                      value={formData.username}
+                      onChange={handleChange}
+                      className={errors.username ? 'error' : ''}
+                    />
+                  </div>
+                  {errors.username && <span className="error-text">{errors.username}</span>}
+                </div>
+
+                <div className="form-group">
+                  <div className="input-container">
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="Password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={errors.password ? 'error' : ''}
+                    />
+                  </div>
+                  {errors.password && <span className="error-text">{errors.password}</span>}
+                </div>
+
+                <div className="form-options">
+                  <label className="remember-me">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    Remember me
+                  </label>
+                  <button
+                    type="button"
+                    className="forgot-password"
+                    onClick={handleForgotPassword}
+                    disabled={isLoading}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
+                <button type="submit" disabled={isLoading} className="login-btn">
+                  {isLoading ? 'LOGGING IN...' : 'LOGIN'}
+                </button>
+
+                <button type="button" className="register-btn" onClick={handleRegister}>
+                  REGISTER
+                </button>
+              </form>
+            )}
+
+          {!showForgot && (
+            <div className="modal-footer">
+              <div className="role-buttons">
+                <button className="role-btn admin-btn" onClick={handleAdminLogin}>ADMIN</button>
+                <button className="role-btn staff-btn" onClick={handleStaffLogin}>STAFF</button>
               </div>
-              {errors.username && <span className="error-text">{errors.username}</span>}
             </div>
-
-            <div className="form-group">
-              <div className="input-container">
-               
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={errors.password ? 'error' : ''}
-                />
-              </div>
-              {errors.password && <span className="error-text">{errors.password}</span>}
-            </div>
-
-            <div className="form-options">
-              <label className="remember-me">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                Remember me
-              </label>
-              <button type="button" className="forgot-password" onClick={handleForgotPassword}>
-                Forgot Password?
-              </button>
-            </div>
-
-            <button type="submit" disabled={isLoading} className="login-btn">
-              {isLoading ? 'LOGGING IN...' : 'LOGIN'}
-            </button>
-
-            <button type="button" className="register-btn" onClick={handleRegister}>
-              REGISTER
-            </button>
-          </form>
-
-          <div className="modal-footer">
-            <div className="role-buttons">
-              <button className="role-btn admin-btn" onClick={handleAdminLogin}>ADMIN</button>
-              <button className="role-btn staff-btn" onClick={handleStaffLogin}>STAFF</button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
